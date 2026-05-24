@@ -11,7 +11,6 @@ import {
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
-import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -75,14 +74,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PrepZo — AI Mock Tests from PDFs" },
-      { name: "description", content: "Upload a PDF and instantly generate exam-grade mock tests for JEE, NEET, and CBSE." },
-      { name: "author", content: "PrepZo" },
-      { property: "og:title", content: "PrepZo — AI Mock Tests from PDFs" },
-      { property: "og:description", content: "Upload a PDF, pick an exam pattern, generate a mock test instantly." },
+      { title: "PrepZo — AI Quiz Generation from PDFs" },
+      { name: "description", content: "Turn any PDF into a timed mock test for JEE, NEET, or CBSE Boards in seconds." },
+      { name: "author", content: "QuizForge" },
+      { property: "og:title", content: "PrepZo — AI Quiz Generation from PDFs" },
+      { property: "og:description", content: "Turn any PDF into a timed mock test for JEE, NEET, or CBSE Boards in seconds." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "PrepZo — AI Quiz Generation from PDFs" },
+      { name: "twitter:description", content: "Turn any PDF into a timed mock test for JEE, NEET, or CBSE Boards in seconds." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/RmoGBLdFpSS5CeNOX8dR48sAk083/social-images/social-1779617748380-1000032816.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/RmoGBLdFpSS5CeNOX8dR48sAk083/social-images/social-1779617748380-1000032816.webp" },
     ],
     links: [
       {
@@ -119,7 +122,6 @@ function RootComponent() {
       <ThemeProvider>
         <AuthProvider>
           <Outlet />
-          <Toaster richColors closeButton position="top-center" />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
