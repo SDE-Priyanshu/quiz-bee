@@ -131,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   active ? "bg-white text-black" : "hover:bg-white/10",
                 )}
               >
-                <Icon className="h-4.5 w-4.5 shrink-0" />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
                 <span className="text-sm font-medium">{item.label}</span>
               </Link>
             );
@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               pathname === "/admin" ? "bg-white text-black" : "hover:bg-white/10",
             )}
           >
-            <Shield className="h-4.5 w-4.5 shrink-0" />
+            <Shield className="h-[18px] w-[18px] shrink-0" />
             <span className="text-sm font-medium flex-1">Admin Panel</span>
             <Lock className="h-3.5 w-3.5 opacity-60" />
           </Link>
@@ -153,7 +153,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onClick={handleLogout}
             className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/10 transition text-sm"
           >
-            <LogOut className="h-4.5 w-4.5" /> Logout
+            <LogOut className="h-[18px] w-[18px]" /> Logout
           </button>
         </nav>
 
