@@ -26,7 +26,7 @@ function About() {
             </div>
 
             <p className="mt-6 text-sm leading-relaxed text-muted-foreground max-w-2xl">
-              I build calm, opinionated software. QuizForge started as a weekend hack to help my
+              I build calm, opinionated software. PrepZo started as a weekend hack to help my
               cousin prep for JEE — turning dense chapter PDFs into clean, exam-pattern mock
               tests. Today it powers thousands of practice sessions every week.
             </p>

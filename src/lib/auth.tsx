@@ -1,48 +1,46 @@
 import * as React from "react";
 
-export type AuthUser = { name: string; email: string; provider: "google" | "facebook" };
+export type Provider = "google" | "facebook";
+export type AuthUser = {
+  name: string;
+  email: string;
+  provider: Provider;
+  avatarSeed?: string;
+};
 
 type AuthContextValue = {
   user: AuthUser | null;
-  loginWithProvider: (provider: "google" | "facebook") => Promise<void>;
+  signIn: (user: AuthUser) => Promise<void>;
   logout: () => void;
-  loading: boolean;
 };
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
-
-const STORAGE_KEY = "quizforge.auth.user";
+export const AUTH_STORAGE_KEY = "prepzo.auth.user";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(null);
-  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+        ?? localStorage.getItem("quizforge.auth.user");
       if (raw) setUser(JSON.parse(raw));
     } catch {}
   }, []);
 
-  const loginWithProvider = React.useCallback(async (provider: "google" | "facebook") => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1600));
-    const mock: AuthUser =
-      provider === "google"
-        ? { name: "Aarav Sharma", email: "aarav.sharma@gmail.com", provider }
-        : { name: "Aarav Sharma", email: "aarav.sharma@facebook.com", provider };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mock));
-    setUser(mock);
-    setLoading(false);
+  const signIn = React.useCallback(async (next: AuthUser) => {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next));
+    setUser(next);
   }, []);
 
   const logout = React.useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem("quizforge.auth.user");
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loginWithProvider, logout, loading }}>
+    <AuthContext.Provider value={{ user, signIn, logout }}>
       {children}
     </AuthContext.Provider>
   );

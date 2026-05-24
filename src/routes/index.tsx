@@ -1,89 +1,109 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import * as React from "react";
-import { useRouter } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth";
 import { Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth, type AuthUser, type Provider } from "@/lib/auth";
+import { AccountPickerModal } from "@/components/AccountPickerModal";
+import { LogoMark } from "@/components/Logo";
 
-export const Route = createFileRoute("/")({
-  component: Index,
-});
+export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
-  const { user, loginWithProvider, loading } = useAuth();
+  const { user, signIn } = useAuth();
   const router = useRouter();
-  const [pending, setPending] = React.useState<null | "google" | "facebook">(null);
+  const [picker, setPicker] = React.useState<Provider | null>(null);
+  const [opening, setOpening] = React.useState<Provider | null>(null);
 
   React.useEffect(() => {
     if (user) router.navigate({ to: "/dashboard" });
   }, [user, router]);
 
-  const handle = async (p: "google" | "facebook") => {
-    setPending(p);
-    await loginWithProvider(p);
-    setPending(null);
+  const open = async (p: Provider) => {
+    setOpening(p);
+    await new Promise((r) => setTimeout(r, 550));
+    setOpening(null);
+    setPicker(p);
+  };
+
+  const handleSelect = async (u: AuthUser) => {
+    await signIn(u);
+    toast.success(`Welcome, ${u.name.split(" ")[0]}`);
+    router.navigate({ to: "/dashboard" });
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground flex items-center justify-center px-5">
-      {/* Background grid */}
+    <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground flex items-center justify-center px-5 py-10">
+      {/* Animated grid background */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:48px_48px]"
+        className="pointer-events-none absolute inset-0 opacity-[0.12] animate-grid-pan [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:60px_60px]"
       />
-      <div className="pointer-events-none absolute -top-40 -left-40 h-[420px] w-[420px] rounded-full bg-foreground/5 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 -right-40 h-[420px] w-[420px] rounded-full bg-foreground/5 blur-3xl" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% 0%, color-mix(in oklab, var(--color-foreground) 8%, transparent), transparent 70%), radial-gradient(40% 40% at 80% 90%, color-mix(in oklab, var(--color-foreground) 6%, transparent), transparent 70%)",
+        }}
+      />
+      <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-[440px] w-[440px] rounded-full bg-foreground/[0.06] blur-3xl animate-pulse-glow" />
 
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-md animate-fade-up">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground mb-6">
-            <Sparkles className="h-3 w-3" /> AI Quiz Engine
+          <div className="inline-flex items-center gap-2 rounded-full border border-border glass px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-6">
+            <Sparkles className="h-3 w-3" /> AI Mock Test Engine
           </div>
-          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight">QuizForge</h1>
-          <p className="mt-3 text-sm text-muted-foreground max-w-sm mx-auto">
-            Turn any PDF into a timed mock test for JEE, NEET, or CBSE Boards — in seconds.
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <LogoMark className="h-10 w-10" />
+            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight">PrepZo</h1>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            Upload a PDF. Get an exam-grade mock test for JEE, NEET, or CBSE — in seconds.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card shadow-2xl p-7">
-          <div className="text-center mb-6">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Sign in</div>
-            <div className="mt-1 text-lg font-medium">Continue to your dashboard</div>
+        <div className="rounded-3xl border border-border glass shadow-2xl p-7 sm:p-8">
+          <div className="text-center mb-7">
+            <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+              Sign in
+            </div>
+            <div className="mt-1.5 text-lg font-medium">Continue to your dashboard</div>
           </div>
 
           <div className="space-y-3">
             <OAuthButton
               label="Continue with Google"
-              loading={pending === "google"}
-              disabled={loading}
-              onClick={() => handle("google")}
+              loading={opening === "google"}
+              disabled={!!opening}
+              onClick={() => open("google")}
               icon={<GoogleIcon />}
             />
             <OAuthButton
               label="Continue with Facebook"
-              loading={pending === "facebook"}
-              disabled={loading}
-              onClick={() => handle("facebook")}
+              loading={opening === "facebook"}
+              disabled={!!opening}
+              onClick={() => open("facebook")}
               icon={<FacebookIcon />}
             />
           </div>
 
-          <div className="relative my-6">
-            <div className="h-px bg-border" />
-            <span className="absolute inset-0 -top-2.5 mx-auto w-fit px-3 bg-card text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Secure OAuth 2.0
-            </span>
-          </div>
-
-          <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
-            By continuing, you agree to our Terms and acknowledge our Privacy Policy.
-            We never post or store your password.
+          <p className="mt-7 text-center text-[11px] text-muted-foreground leading-relaxed">
+            By continuing, you agree to our Terms of Service and Privacy Policy.
+            Your credentials remain secure and are never stored by us.
           </p>
         </div>
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground">
-          © {new Date().getFullYear()} QuizForge. All rights reserved.
+          © {new Date().getFullYear()} PrepZo. Crafted for serious learners.
         </p>
       </div>
+
+      <AccountPickerModal
+        open={picker !== null}
+        provider={picker}
+        onClose={() => setPicker(null)}
+        onSelect={handleSelect}
+      />
     </div>
   );
 }
@@ -105,12 +125,12 @@ function OAuthButton({
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className="group w-full h-12 rounded-xl border border-border bg-background hover:bg-accent transition flex items-center justify-center gap-3 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+      className="group relative w-full h-12 rounded-2xl border border-border bg-background/60 hover:bg-accent transition-all duration-200 flex items-center justify-center gap-3 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md hover:-translate-y-[1px]"
     >
       {loading ? (
         <>
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Redirecting to provider…</span>
+          <span>Opening secure window…</span>
         </>
       ) : (
         <>
@@ -132,7 +152,6 @@ function GoogleIcon() {
     </svg>
   );
 }
-
 function FacebookIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5">
