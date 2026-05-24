@@ -5,7 +5,7 @@ import { FileText, ArrowRight, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/tests")({ component: Tests });
 
-type Record = {
+type Attempt = {
   id: number;
   fileName: string;
   exam: string;
@@ -16,7 +16,7 @@ type Record = {
   finishedAt: number;
 };
 
-const EXAM_LABEL: Record<string, string> = { jee: "JEE", neet: "NEET", cbse: "CBSE" } as any;
+const EXAM_LABEL: Record<string, string> = { jee: "JEE", neet: "NEET", cbse: "CBSE" };
 
 function Tests() {
   return (
@@ -27,7 +27,7 @@ function Tests() {
 }
 
 function Inner() {
-  const [items, setItems] = React.useState<Record[] | null>(null);
+  const [items, setItems] = React.useState<Attempt[] | null>(null);
 
   React.useEffect(() => {
     try {
