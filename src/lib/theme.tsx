@@ -7,7 +7,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = React.useState<Theme>("dark");
 
   React.useEffect(() => {
-    const stored = (localStorage.getItem("quizforge.theme") as Theme | null) ?? "dark";
+    const stored = (localStorage.getItem("prepzo.theme") as Theme | null)
+      ?? (localStorage.getItem("quizforge.theme") as Theme | null)
+      ?? "dark";
     setTheme(stored);
   }, []);
 
@@ -15,7 +17,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     if (theme === "dark") root.classList.add("dark");
     else root.classList.remove("dark");
-    localStorage.setItem("quizforge.theme", theme);
+    localStorage.setItem("prepzo.theme", theme);
   }, [theme]);
 
   return (
