@@ -92,6 +92,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href:
+          "data:image/svg+xml;utf8," +
+          encodeURIComponent(
+            `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><defs><linearGradient id='b' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='%232A2A2D'/><stop offset='45%' stop-color='%230E0E10'/><stop offset='100%' stop-color='%23000000'/></linearGradient><linearGradient id='m' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='%23ffffff'/><stop offset='35%' stop-color='%23E6E8EC'/><stop offset='65%' stop-color='%23A8AEB8'/><stop offset='100%' stop-color='%23F4F5F7'/></linearGradient></defs><rect x='2' y='2' width='36' height='36' rx='10' fill='url(%23b)'/><path d='M13.5 29V11.4h8.1c3.55 0 5.95 2.25 5.95 5.6 0 3.35-2.4 5.6-5.95 5.6H17.6V29h-4.1zm4.1-9.55h3.45c1.55 0 2.55-.85 2.55-2.45s-1-2.45-2.55-2.45H17.6v4.9z' fill='url(%23m)'/><circle cx='28.5' cy='11' r='2.6' fill='%23ffffff'/></svg>`
+          ),
+      },
     ],
   }),
   shellComponent: RootShell,
