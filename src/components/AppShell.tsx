@@ -9,13 +9,10 @@ import {
   MessagesSquare,
   Star,
   Shield,
-  Sun,
-  Moon,
   LogOut,
   Lock,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/Logo";
 
@@ -30,7 +27,6 @@ const NAV = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false);
   const { user, logout } = useAuth();
-  const { theme, toggle } = useTheme();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -38,8 +34,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const initials = user ? user.name.split(" ").map((p) => p[0]).join("").slice(0, 2) : "";
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.navigate({ to: "/" });
   };
 
@@ -71,10 +67,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {user && (
             <div className="flex items-center gap-2 rounded-full border border-border bg-card/80 px-2.5 py-1.5">
-              <div className="h-7 w-7 rounded-full bg-foreground text-background flex items-center justify-center text-[11px] font-semibold">
-                {initials}
-              </div>
-              <span className="text-xs text-muted-foreground hidden sm:inline pr-2">
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="h-7 w-7 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="h-7 w-7 rounded-full bg-foreground text-background flex items-center justify-center text-[11px] font-semibold">
+                  {initials}
+                </div>
+              )}
+              <span className="text-xs text-muted-foreground hidden sm:inline pr-2 max-w-[180px] truncate">
                 {user.email}
               </span>
             </div>
@@ -86,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div
         onClick={() => setOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity",
+          "fixed inset-0 z-40 bg-black/70 backdrop-blur-md transition-opacity duration-300",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
@@ -94,14 +99,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-[300px] sm:w-[320px] border-r border-border shadow-2xl transition-transform duration-300",
-          "bg-[oklch(0.16_0_0)] text-[oklch(0.98_0_0)]",
+          "fixed top-0 left-0 z-50 h-full w-[300px] sm:w-[330px] border-r border-white/10 shadow-2xl",
+          "transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "bg-[oklch(0.13_0_0)] text-[oklch(0.98_0_0)]",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between px-5 pt-5 pb-4">
+        {/* Inner glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            background:
+              "radial-gradient(70% 40% at 0% 0%, rgba(255,255,255,0.06), transparent 60%)",
+          }}
+        />
+        <div className="relative flex items-center justify-between px-5 pt-5 pb-5">
           <div className="flex items-center gap-2.5">
-            <LogoMark className="h-7 w-7" />
+            <LogoMark className="h-8 w-8" />
             <div>
               <div className="text-base font-semibold leading-none">PrepZo</div>
               <div className="text-[10px] uppercase tracking-[0.22em] text-white/40 mt-1">
@@ -111,14 +126,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <button
             onClick={() => setOpen(false)}
-            className="h-9 w-9 inline-flex items-center justify-center rounded-md hover:bg-white/10"
+            className="h-9 w-9 inline-flex items-center justify-center rounded-xl hover:bg-white/10 transition"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <nav className="px-3 mt-2 space-y-1">
+        <div className="relative px-5 mb-3">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        </div>
+
+        <nav className="relative px-3 mt-1 space-y-1.5">
           {NAV.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.to;
@@ -127,58 +146,65 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 transition",
-                  active ? "bg-white text-black" : "hover:bg-white/10",
+                  "group relative flex items-center gap-3 rounded-xl px-3.5 py-3 transition-all duration-200",
+                  active
+                    ? "bg-white text-black shadow-lg shadow-black/40"
+                    : "text-white/80 hover:bg-white/[0.07] hover:text-white hover:translate-x-0.5",
                 )}
               >
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full bg-white" />
+                )}
                 <Icon className="h-[18px] w-[18px] shrink-0" />
-                <span className="text-sm font-medium">{item.label}</span>
+                <span className="text-sm font-medium tracking-tight">{item.label}</span>
               </Link>
             );
           })}
 
-          <Link
-            to="/admin"
-            className={cn(
-              "group flex items-center gap-3 rounded-xl px-3 py-2.5 transition mt-3",
-              pathname === "/admin" ? "bg-white text-black" : "hover:bg-white/10",
-            )}
-          >
-            <Shield className="h-[18px] w-[18px] shrink-0" />
-            <span className="text-sm font-medium flex-1">Admin Panel</span>
-            <Lock className="h-3.5 w-3.5 opacity-60" />
-          </Link>
-
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/10 transition text-sm"
-          >
-            <LogOut className="h-[18px] w-[18px]" /> Logout
-          </button>
-        </nav>
-
-        <div className="absolute bottom-0 inset-x-0 p-4 border-t border-white/10">
-          <button
-            onClick={toggle}
-            className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-white/10 transition"
-          >
-            <span className="flex items-center gap-3 text-sm">
-              {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              {theme === "dark" ? "Dark mode" : "Light mode"}
-            </span>
-            <span
+          <div className="pt-3 mt-2 border-t border-white/10">
+            <Link
+              to="/admin"
               className={cn(
-                "h-5 w-9 rounded-full p-0.5 transition",
-                theme === "dark" ? "bg-white" : "bg-white/30",
+                "group flex items-center gap-3 rounded-xl px-3.5 py-3 transition-all duration-200",
+                pathname === "/admin"
+                  ? "bg-white text-black shadow-lg"
+                  : "text-white/80 hover:bg-white/[0.07] hover:text-white",
               )}
             >
-              <span
-                className={cn(
-                  "block h-4 w-4 rounded-full bg-black transition",
-                  theme === "dark" ? "translate-x-4" : "translate-x-0",
-                )}
-              />
-            </span>
+              <Shield className="h-[18px] w-[18px] shrink-0" />
+              <span className="text-sm font-medium flex-1">Admin Panel</span>
+              <Lock className="h-3.5 w-3.5 opacity-60" />
+            </Link>
+          </div>
+        </nav>
+
+        {/* Footer: user card + logout */}
+        <div className="absolute bottom-0 inset-x-0 p-4 border-t border-white/10 bg-black/30">
+          {user && (
+            <div className="flex items-center gap-3 px-2 py-2 mb-2">
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="h-9 w-9 rounded-full object-cover ring-1 ring-white/20"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center text-xs font-semibold">
+                  {initials}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{user.name}</div>
+                <div className="text-[11px] text-white/50 truncate">{user.email}</div>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 bg-white/[0.04] hover:bg-white/[0.10] transition text-sm"
+          >
+            <LogOut className="h-[18px] w-[18px]" /> Logout
           </button>
         </div>
       </aside>
@@ -191,21 +217,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
-    setReady(true);
-    if (!user) {
-      const raw =
-        typeof window !== "undefined"
-          ? localStorage.getItem("prepzo.auth.user") ?? localStorage.getItem("quizforge.auth.user")
-          : null;
-      if (!raw) router.navigate({ to: "/" });
-    }
-  }, [user, router]);
+    if (!loading && !user) router.navigate({ to: "/" });
+  }, [loading, user, router]);
 
-  if (!ready || !user) return null;
+  if (loading || !user) return null;
   return <AppShell>{children}</AppShell>;
 }
