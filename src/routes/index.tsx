@@ -3,7 +3,7 @@ import * as React from "react";
 import { Loader2, Sparkles, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { LogoMark } from "@/components/Logo";
+import { LogoLockup } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { lovable } from "@/integrations/lovable";
 
@@ -74,16 +74,13 @@ function Index() {
           <div className="inline-flex items-center gap-2 rounded-full border border-border glass px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-6">
             <Sparkles className="h-3 w-3" /> AI Mock Test Engine
           </div>
-          <div className="relative flex items-center justify-center gap-3 mb-3">
-            {/* Soft logo glow */}
+          <div className="relative flex items-center justify-center mb-3">
             <div
               aria-hidden
-              className="absolute h-32 w-32 rounded-full bg-foreground/15 blur-3xl animate-pulse-glow"
+              className="absolute h-40 w-40 rounded-full bg-foreground/15 blur-3xl animate-pulse-glow"
             />
-            <LogoMark className="relative h-12 w-12 drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]" />
-            <h1 className="relative text-4xl sm:text-5xl font-semibold tracking-tight">
-              PrepZo
-            </h1>
+            <LogoLockup className="relative h-14 sm:h-16" />
+            <h1 className="sr-only">PrepZo</h1>
           </div>
           <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
             Upload a PDF. Get an exam-grade mock test for JEE, NEET, or CBSE — in seconds.
