@@ -37,18 +37,33 @@ export function LogoMark({ className }: { className?: string }) {
  * Full lockup: icon + "PrepZo" wordmark from the brand asset.
  * Use on hero / splash / login surfaces.
  */
-export function LogoLockup({ className }: { className?: string }) {
+export function LogoLockup({ className, shimmer = false }: { className?: string; shimmer?: boolean }) {
   return (
-    <img
-      src={lockupSrc}
-      alt="PrepZo"
-      draggable={false}
-      className={cn(
-        "h-12 w-auto select-none object-contain",
-        "drop-shadow-[0_4px_18px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_4px_22px_rgba(255,255,255,0.18)]",
-        className,
+    <span className={cn("relative inline-flex items-center overflow-hidden", className)}>
+      <img
+        src={lockupSrc}
+        alt="PrepZo"
+        draggable={false}
+        className={cn(
+          "h-full w-auto select-none object-contain relative z-10",
+          "contrast-[1.08] brightness-[1.02]",
+          "drop-shadow-[0_6px_22px_rgba(0,0,0,0.28)]",
+          "dark:contrast-[1.15] dark:brightness-[1.15]",
+          "dark:drop-shadow-[0_6px_30px_rgba(255,255,255,0.28)]",
+        )}
+      />
+      {shimmer && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 -inset-x-1 z-20 animate-metal-shimmer"
+          style={{
+            background:
+              "linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.7) 50%, transparent 65%)",
+            mixBlendMode: "overlay",
+          }}
+        />
       )}
-    />
+    </span>
   );
 }
 
