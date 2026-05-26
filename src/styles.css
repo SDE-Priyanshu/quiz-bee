@@ -65,8 +65,8 @@
 
 :root {
   --radius: 0.625rem;
-  /* Premium monochrome — clean white surface */
-  --background: oklch(0.99 0 0);
+  /* Premium monochrome — clean white surface with subtle warmth */
+  --background: oklch(0.985 0.002 247);
   --foreground: oklch(0.12 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.12 0 0);
@@ -82,8 +82,8 @@
   --accent-foreground: oklch(0.12 0 0);
   --destructive: oklch(0.628 0.225 27.5); /* #EF4444 */
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
+  --border: oklch(0.91 0.002 247);
+  --input: oklch(0.91 0.002 247);
   --ring: oklch(0.3 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -102,9 +102,9 @@
 
 .dark {
   /* Pitch black surface */
-  --background: oklch(0.08 0 0);
+  --background: oklch(0.06 0 0);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.14 0 0);
+  --card: oklch(0.12 0 0);
   --card-foreground: oklch(0.98 0 0);
   --popover: oklch(0.14 0 0);
   --popover-foreground: oklch(0.98 0 0);
@@ -185,8 +185,54 @@
 .animate-grid-pan { animation: prepzo-grid-pan 18s linear infinite; }
 .animate-pulse-glow { animation: prepzo-pulse-glow 6s ease-in-out infinite; }
 .animate-fade-up { animation: prepzo-fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Premium glassmorphism — adapts to theme */
 .glass {
-  background: color-mix(in oklab, var(--color-card) 70%, transparent);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: color-mix(in oklab, var(--color-card) 72%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid color-mix(in oklab, var(--color-foreground) 8%, transparent);
 }
+.dark .glass {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, white 6%, transparent),
+    color-mix(in oklab, var(--color-card) 70%, transparent)
+  );
+  border: 1px solid color-mix(in oklab, white 10%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 10%, transparent),
+    0 30px 80px -20px rgba(0,0,0,0.7);
+}
+:root:not(.dark) .glass {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    0 1px 0 rgba(255,255,255,0.6),
+    0 30px 60px -20px rgba(15,23,42,0.18),
+    0 10px 25px -10px rgba(15,23,42,0.10);
+}
+
+/* Animated metallic shimmer overlay (for logo) */
+@keyframes prepzo-metal-shimmer {
+  0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35% { opacity: 0.55; }
+  70% { opacity: 0.55; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+.animate-metal-shimmer {
+  animation: prepzo-metal-shimmer 4.5s ease-in-out infinite;
+}
+
+/* Soft floating spotlight */
+@keyframes prepzo-spotlight-drift {
+  0%, 100% { transform: translate3d(0,0,0); }
+  50% { transform: translate3d(2%, -1.5%, 0); }
+}
+.animate-spotlight { animation: prepzo-spotlight-drift 14s ease-in-out infinite; }
+
+/* Heading glow pulse */
+@keyframes prepzo-heading-glow {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.55; }
+}
+.animate-heading-glow { animation: prepzo-heading-glow 5s ease-in-out infinite; }
