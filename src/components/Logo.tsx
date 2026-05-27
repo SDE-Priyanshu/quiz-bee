@@ -11,23 +11,26 @@ export function LogoMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "relative inline-flex items-center justify-center h-8 w-8 shrink-0 group",
+        "relative inline-flex items-center justify-center h-8 w-8 shrink-0 group overflow-hidden rounded-[22%]",
         className,
       )}
       aria-hidden
     >
-      <span
-        className="absolute inset-0 rounded-[22%] blur-md opacity-0 group-hover:opacity-70 transition-opacity duration-500"
-        style={{
-          background:
-            "radial-gradient(closest-side, rgba(255,255,255,0.55), transparent 70%)",
-        }}
-      />
       <img
         src={iconSrc}
         alt=""
         draggable={false}
-        className="relative h-full w-full object-contain select-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_2px_10px_rgba(255,255,255,0.18)]"
+        className="relative z-10 h-full w-full object-contain select-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_1px_6px_rgba(255,255,255,0.18)]"
+      />
+      {/* Metallic shimmer sweep — icon only */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-20 animate-metal-shimmer"
+        style={{
+          background:
+            "linear-gradient(110deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%)",
+          mixBlendMode: "overlay",
+        }}
       />
     </span>
   );
