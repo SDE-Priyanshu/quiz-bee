@@ -161,21 +161,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          <div className="pt-3 mt-2 border-t border-white/10">
-            <Link
-              to="/admin"
-              className={cn(
-                "group flex items-center gap-3 rounded-xl px-3.5 py-3 transition-all duration-200",
-                pathname === "/admin"
-                  ? "bg-white text-black shadow-lg"
-                  : "text-white/80 hover:bg-white/[0.07] hover:text-white",
-              )}
-            >
-              <Shield className="h-[18px] w-[18px] shrink-0" />
-              <span className="text-sm font-medium flex-1">Admin Panel</span>
-              <Lock className="h-3.5 w-3.5 opacity-60" />
-            </Link>
-          </div>
         </nav>
 
         {/* Footer: user card + logout */}
