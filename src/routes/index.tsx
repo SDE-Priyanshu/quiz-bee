@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import * as React from "react";
-import { Loader2, Sparkles, ShieldCheck } from "lucide-react";
+import { Loader2, Sparkles, ShieldCheck, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { LogoLockup } from "@/components/Logo";
@@ -10,9 +10,10 @@ import { lovable } from "@/integrations/lovable";
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
-  const { user } = useAuth();
+  const { user, loginAsGuest } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = React.useState<"google" | null>(null);
+  const [loading, setLoading] = React.useState<"google" | "guest" | null>(null);
+  const [guestOpen, setGuestOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (user) router.navigate({ to: "/dashboard" });
@@ -41,31 +42,23 @@ function Index() {
     }
   };
 
+  const handleConfirmGuest = () => {
+    setLoading("guest");
+    loginAsGuest();
+    toast.success("Continuing as Guest");
+    setGuestOpen(false);
+    // navigation happens via effect once user populates
+  };
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-foreground flex items-center justify-center px-5 py-10
                     bg-[radial-gradient(120%_80%_at_50%_-10%,#ffffff_0%,#f3f4f7_45%,#e8eaf0_100%)]
                     dark:bg-[radial-gradient(120%_80%_at_50%_-10%,#0a0a0a_0%,#050505_60%,#000000_100%)]">
-      {/* Soft spotlight — drifting */}
+      {/* Static grid texture */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 animate-spotlight"
-        style={{
-          background:
-            "radial-gradient(45% 35% at 50% 18%, color-mix(in oklab, var(--color-foreground) 9%, transparent), transparent 70%), radial-gradient(35% 30% at 82% 88%, color-mix(in oklab, var(--color-foreground) 6%, transparent), transparent 75%)",
-        }}
+        className="pointer-events-none absolute inset-0 opacity-[0.08] dark:opacity-[0.12] [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_85%)]"
       />
-      {/* Animated grid */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.10] dark:opacity-[0.14] animate-grid-pan [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_85%)]"
-      />
-      {/* Particle dots */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_center,currentColor_1px,transparent_1.5px)] [background-size:42px_42px] [mask-image:radial-gradient(ellipse_at_center,black_25%,transparent_70%)]"
-        style={{ color: "color-mix(in oklab, var(--color-foreground) 22%, transparent)" }}
-      />
-      {/* Top horizon highlight (light mode only flair) */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/30 to-transparent"
@@ -81,24 +74,7 @@ function Index() {
           <div className="inline-flex items-center gap-2 rounded-full border border-border glass px-3.5 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.24em] text-muted-foreground mb-7 shadow-sm">
             <Sparkles className="h-3 w-3" /> AI Mock Test Engine
           </div>
-          <div className="relative flex items-center justify-center mb-4 py-3">
-            {/* Heading glow stack */}
-            <div
-              aria-hidden
-              className="absolute h-56 w-56 rounded-full blur-3xl animate-pulse-glow"
-              style={{
-                background:
-                  "radial-gradient(closest-side, color-mix(in oklab, var(--color-foreground) 28%, transparent), transparent 70%)",
-              }}
-            />
-            <div
-              aria-hidden
-              className="absolute h-32 w-72 rounded-full blur-2xl animate-heading-glow"
-              style={{
-                background:
-                  "radial-gradient(closest-side, color-mix(in oklab, var(--color-foreground) 18%, transparent), transparent 75%)",
-              }}
-            />
+          <div className="relative flex items-center justify-center mb-4 py-2">
             <LogoLockup className="relative h-16 sm:h-20" shimmer />
             <h1 className="sr-only">PrepZo</h1>
           </div>
@@ -108,7 +84,6 @@ function Index() {
         </div>
 
         <div className="relative rounded-[28px] glass p-7 sm:p-9">
-          {/* Top inner gradient sheen */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-foreground/40 to-transparent"
@@ -133,7 +108,6 @@ function Index() {
                          dark:shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_24px_-12px_rgba(0,0,0,0.8)]
                          dark:hover:shadow-[0_1px_0_rgba(255,255,255,0.1)_inset,0_18px_40px_-12px_rgba(0,0,0,0.9)]"
             >
-              {/* Sweep highlight */}
               <span
                 aria-hidden
                 className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1100ms] ease-out"
@@ -154,6 +128,28 @@ function Index() {
                 </>
               )}
             </button>
+
+            <button
+              onClick={() => setGuestOpen(true)}
+              disabled={loading !== null}
+              className="group relative w-full h-12 sm:h-[52px] rounded-2xl border border-border bg-card/60 transition-all duration-300 flex items-center justify-center gap-3 text-[14px] sm:text-[15px] font-medium disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden
+                         shadow-[0_1px_0_rgba(255,255,255,0.5)_inset,0_6px_20px_-12px_rgba(15,23,42,0.2)]
+                         hover:shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_14px_30px_-12px_rgba(15,23,42,0.3)]
+                         hover:-translate-y-[1px] active:translate-y-0 hover:border-foreground/25
+                         dark:shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_6px_20px_-12px_rgba(0,0,0,0.7)]
+                         dark:hover:shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_16px_34px_-12px_rgba(0,0,0,0.85)]"
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1100ms] ease-out"
+                style={{
+                  background:
+                    "linear-gradient(110deg, transparent 40%, color-mix(in oklab, var(--color-foreground) 8%, transparent) 50%, transparent 60%)",
+                }}
+              />
+              <UserRound className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              <span className="tracking-tight">Continue as Guest</span>
+            </button>
           </div>
 
           <div className="mt-7 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
@@ -169,6 +165,91 @@ function Index() {
         <p className="mt-7 text-center text-[11px] text-muted-foreground/70 tracking-wide">
           © {new Date().getFullYear()} PrepZo. Crafted for serious learners.
         </p>
+      </div>
+
+      <GuestConfirmModal
+        open={guestOpen}
+        onClose={() => setGuestOpen(false)}
+        onConfirm={handleConfirmGuest}
+        loading={loading === "guest"}
+      />
+    </div>
+  );
+}
+
+function GuestConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+  loading,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+}) {
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-5 animate-fade-up">
+      <div
+        className="absolute inset-0 bg-black/55 backdrop-blur-md"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-md rounded-3xl glass p-7 sm:p-8 shadow-2xl">
+        <button
+          onClick={onClose}
+          className="absolute top-3.5 right-3.5 h-9 w-9 inline-flex items-center justify-center rounded-xl hover:bg-foreground/10 transition"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-foreground/10 flex items-center justify-center">
+            <UserRound className="h-5 w-5" strokeWidth={1.75} />
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.26em] text-muted-foreground">
+              Confirm
+            </div>
+            <div className="text-lg font-semibold tracking-tight">
+              Continue as Guest?
+            </div>
+          </div>
+        </div>
+        <p className="text-[13.5px] text-muted-foreground leading-relaxed mb-6">
+          You can explore PrepZo without signing in, but your progress and data
+          may not sync across devices.
+        </p>
+        <div className="flex gap-2.5">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 h-11 rounded-xl border border-border bg-card hover:bg-accent transition text-sm font-medium disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 h-11 rounded-xl bg-foreground text-background hover:opacity-90 transition text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Entering…
+              </>
+            ) : (
+              "Continue as Guest"
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
