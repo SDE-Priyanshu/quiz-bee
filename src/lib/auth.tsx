@@ -8,6 +8,7 @@ export type AuthUser = {
   email: string;
   avatarUrl?: string;
   provider: string;
+  isGuest?: boolean;
 };
 
 type AuthContextValue = {
@@ -15,9 +16,23 @@ type AuthContextValue = {
   session: Session | null;
   loading: boolean;
   logout: () => Promise<void>;
+  loginAsGuest: () => void;
 };
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
+
+const GUEST_KEY = "prepzo.auth.guest";
+
+function readGuest(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(GUEST_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AuthUser;
+    return { ...parsed, isGuest: true };
+  } catch {
+    return null;
+  }
+}
 
 function toAuthUser(u: User | null | undefined): AuthUser | null {
   if (!u) return null;
@@ -38,6 +53,9 @@ function toAuthUser(u: User | null | undefined): AuthUser | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = React.useState<Session | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [guest, setGuest] = React.useState<AuthUser | null>(() =>
+    typeof window !== "undefined" ? readGuest() : null,
+  );
 
   React.useEffect(() => {
     // Listener first
@@ -57,17 +75,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(async () => {
     await supabase.auth.signOut();
-    // Clean any legacy keys
     try {
       localStorage.removeItem("prepzo.auth.user");
       localStorage.removeItem("quizforge.auth.user");
+      localStorage.removeItem(GUEST_KEY);
     } catch {}
+    setGuest(null);
   }, []);
 
-  const user = React.useMemo(() => toAuthUser(session?.user), [session]);
+  const loginAsGuest = React.useCallback(() => {
+    const g: AuthUser = {
+      id: `guest-${Math.random().toString(36).slice(2, 10)}`,
+      name: "Guest User",
+      email: "guest@prepzo.local",
+      provider: "guest",
+      isGuest: true,
+    };
+    try {
+      localStorage.setItem(GUEST_KEY, JSON.stringify(g));
+    } catch {}
+    setGuest(g);
+  }, []);
+
+  const user = React.useMemo(
+    () => toAuthUser(session?.user) ?? guest,
+    [session, guest],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, logout }}>
+    <AuthContext.Provider value={{ user, session, loading, logout, loginAsGuest }}>
       {children}
     </AuthContext.Provider>
   );
