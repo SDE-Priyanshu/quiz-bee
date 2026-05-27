@@ -8,9 +8,7 @@ import {
   User,
   MessagesSquare,
   Star,
-  Shield,
   LogOut,
-  Lock,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
