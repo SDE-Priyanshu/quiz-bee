@@ -54,10 +54,23 @@ function Index() {
     <div className="relative min-h-screen w-full overflow-hidden text-foreground flex items-center justify-center px-5 py-10
                     bg-[radial-gradient(120%_80%_at_50%_-10%,#ffffff_0%,#f3f4f7_45%,#e8eaf0_100%)]
                     dark:bg-[radial-gradient(120%_80%_at_50%_-10%,#0a0a0a_0%,#050505_60%,#000000_100%)]">
-      {/* Static grid texture */}
+      {/* Animated grid — gentle infinite drift + soft breathing */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.08] dark:opacity-[0.12] [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_85%)]"
+        className="pointer-events-none absolute inset-0 animate-grid-drift [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_85%)]"
+        style={{
+          ["--grid-opacity-low" as never]: "0.06",
+          ["--grid-opacity-high" as never]: "0.11",
+        }}
+      />
+      {/* Soft moving sheen across the grid */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-[20%] animate-grid-sheen opacity-40 dark:opacity-30 [mask-image:radial-gradient(ellipse_at_center,black_0%,transparent_70%)]"
+        style={{
+          background:
+            "radial-gradient(60% 50% at 50% 50%, color-mix(in oklab, var(--color-foreground) 5%, transparent), transparent 70%)",
+        }}
       />
       <div
         aria-hidden
@@ -75,7 +88,7 @@ function Index() {
             <Sparkles className="h-3 w-3" /> AI Mock Test Engine
           </div>
           <div className="relative flex items-center justify-center mb-4 py-2">
-            <LogoLockup className="relative h-16 sm:h-20" shimmer />
+            <LogoLockup className="relative h-16 sm:h-20" />
             <h1 className="sr-only">PrepZo</h1>
           </div>
           <p className="mt-3 text-[13px] sm:text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed tracking-[0.005em]">
