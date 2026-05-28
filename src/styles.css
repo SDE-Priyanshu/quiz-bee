@@ -166,9 +166,18 @@
 }
 
 /* Animated grid + glow utilities for premium login */
-@keyframes prepzo-grid-pan {
-  0% { background-position: 0 0, 0 0; }
-  100% { background-position: 60px 60px, 60px 60px; }
+@keyframes prepzo-grid-drift {
+  0%   { background-position: 0px 0px, 0px 0px; }
+  100% { background-position: 64px 64px, 64px 64px; }
+}
+@keyframes prepzo-grid-breathe {
+  0%, 100% { opacity: var(--grid-opacity-low, 0.07); }
+  50%      { opacity: var(--grid-opacity-high, 0.12); }
+}
+@keyframes prepzo-grid-sheen {
+  0%   { transform: translate3d(-30%, -10%, 0); }
+  50%  { transform: translate3d(20%, 10%, 0); }
+  100% { transform: translate3d(-30%, -10%, 0); }
 }
 @keyframes prepzo-pulse-glow {
   0%, 100% { opacity: 0.35; transform: scale(1); }
@@ -182,7 +191,16 @@
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-.animate-grid-pan { animation: prepzo-grid-pan 18s linear infinite; }
+.animate-grid-drift {
+  animation:
+    prepzo-grid-drift 40s linear infinite,
+    prepzo-grid-breathe 9s ease-in-out infinite;
+  will-change: background-position, opacity;
+}
+.animate-grid-sheen {
+  animation: prepzo-grid-sheen 22s ease-in-out infinite;
+  will-change: transform;
+}
 .animate-pulse-glow { animation: prepzo-pulse-glow 6s ease-in-out infinite; }
 .animate-fade-up { animation: prepzo-fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
 

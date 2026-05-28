@@ -20,17 +20,7 @@ export function LogoMark({ className }: { className?: string }) {
         src={iconSrc}
         alt=""
         draggable={false}
-        className="relative z-10 h-full w-full object-contain select-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.35)] dark:drop-shadow-[0_1px_6px_rgba(255,255,255,0.18)]"
-      />
-      {/* Metallic shimmer sweep — icon only */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-20 animate-metal-shimmer"
-        style={{
-          background:
-            "linear-gradient(110deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%)",
-          mixBlendMode: "overlay",
-        }}
+        className="relative z-10 h-full w-full object-contain select-none contrast-[1.15] brightness-[0.95] drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)] dark:contrast-[1.2] dark:brightness-[1.18] dark:drop-shadow-[0_1px_6px_rgba(255,255,255,0.22)]"
       />
     </span>
   );
@@ -41,31 +31,23 @@ export function LogoMark({ className }: { className?: string }) {
  * Use on hero / splash / login surfaces.
  */
 export function LogoLockup({ className, shimmer = false }: { className?: string; shimmer?: boolean }) {
+  // `shimmer` retained for API compatibility but intentionally ignored — logo stays static.
+  void shimmer;
   return (
-    <span className={cn("relative inline-flex items-center overflow-hidden", className)}>
+    <span className={cn("relative inline-flex items-center", className)}>
       <img
         src={lockupSrc}
         alt="PrepZo"
         draggable={false}
         className={cn(
           "h-full w-auto select-none object-contain relative z-10",
-          "contrast-[1.08] brightness-[1.02]",
-          "drop-shadow-[0_6px_22px_rgba(0,0,0,0.28)]",
-          "dark:contrast-[1.15] dark:brightness-[1.15]",
-          "dark:drop-shadow-[0_6px_30px_rgba(255,255,255,0.28)]",
+          // Premium chrome look — sharper edges, better readability in both modes
+          "contrast-[1.22] brightness-[0.92] saturate-[1.05]",
+          "drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)] drop-shadow-[0_4px_14px_rgba(0,0,0,0.22)]",
+          "dark:contrast-[1.25] dark:brightness-[1.25] dark:saturate-100",
+          "dark:drop-shadow-[0_1px_2px_rgba(255,255,255,0.18)] dark:drop-shadow-[0_6px_24px_rgba(255,255,255,0.22)]",
         )}
       />
-      {shimmer && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 -inset-x-1 z-20 animate-metal-shimmer"
-          style={{
-            background:
-              "linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.7) 50%, transparent 65%)",
-            mixBlendMode: "overlay",
-          }}
-        />
-      )}
     </span>
   );
 }
