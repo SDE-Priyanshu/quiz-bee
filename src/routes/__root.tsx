@@ -11,6 +11,8 @@ import {
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
+import { GuestGateProvider } from "@/components/GuestGate";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -123,7 +125,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <Outlet />
+          <GuestGateProvider>
+            <Outlet />
+            <Toaster />
+          </GuestGateProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
