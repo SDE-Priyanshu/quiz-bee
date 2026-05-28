@@ -9,10 +9,13 @@ import {
   MessagesSquare,
   Star,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/Logo";
+import { getRole } from "@/lib/roles";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -27,6 +30,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const role = getRole(user);
+  const isAdmin = role === "admin";
 
   React.useEffect(() => { setOpen(false); }, [pathname]);
 
@@ -64,7 +69,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {user && (
-            <div className="flex items-center gap-2 rounded-full border border-border bg-card/80 px-2.5 py-1.5">
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <div className="flex items-center gap-2 rounded-full border border-border bg-card/80 px-2.5 py-1.5">
               {user.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
@@ -78,8 +85,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               <span className="text-xs text-muted-foreground hidden sm:inline pr-2 max-w-[180px] truncate">
-                {user.email}
+                {user.isGuest ? "Guest" : user.email}
               </span>
+              </div>
             </div>
           )}
         </div>
@@ -89,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div
         onClick={() => setOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-black/70 backdrop-blur-md transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-foreground/40 backdrop-blur-md transition-opacity duration-300",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
@@ -97,34 +105,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-[300px] sm:w-[330px] border-r border-white/10 shadow-2xl",
+          "fixed top-0 left-0 z-50 h-full w-[300px] sm:w-[330px] border-r border-border shadow-2xl",
           "transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          "bg-[oklch(0.13_0_0)] text-[oklch(0.98_0_0)]",
+          "bg-card text-foreground",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        {/* Inner glow */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-50"
-          style={{
-            background:
-              "radial-gradient(70% 40% at 0% 0%, rgba(255,255,255,0.06), transparent 60%)",
-          }}
-        />
         <div className="relative flex items-center justify-between px-5 pt-5 pb-5">
           <div className="flex items-center gap-2.5">
             <LogoMark className="h-8 w-8" />
             <div>
               <div className="text-base font-semibold leading-none">PrepZo</div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-white/40 mt-1">
+              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mt-1">
                 Navigation
               </div>
             </div>
           </div>
           <button
             onClick={() => setOpen(false)}
-            className="h-9 w-9 inline-flex items-center justify-center rounded-xl hover:bg-white/10 transition"
+            className="h-9 w-9 inline-flex items-center justify-center rounded-xl hover:bg-accent transition"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -132,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="relative px-5 mb-3">
-          <div className="h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+          <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         </div>
 
         <nav className="relative px-3 mt-1 space-y-1.5">
@@ -146,12 +145,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "group relative flex items-center gap-3 rounded-xl px-3.5 py-3 transition-all duration-200",
                   active
-                    ? "bg-white text-black shadow-lg shadow-black/40"
-                    : "text-white/80 hover:bg-white/[0.07] hover:text-white hover:translate-x-0.5",
+                    ? "bg-foreground text-background shadow-lg"
+                    : "text-foreground/80 hover:bg-accent hover:text-foreground hover:translate-x-0.5",
                 )}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full bg-white" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full bg-background" />
                 )}
                 <Icon className="h-[18px] w-[18px] shrink-0" />
                 <span className="text-sm font-medium tracking-tight">{item.label}</span>
@@ -159,33 +158,70 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
 
+          {/* Admin entry — visible to all, interactive only for admin email */}
+          {isAdmin ? (
+            <Link
+              to="/admin"
+              className={cn(
+                "group relative flex items-center gap-3 rounded-xl px-3.5 py-3 transition-all duration-200",
+                pathname === "/admin"
+                  ? "bg-foreground text-background shadow-lg"
+                  : "text-foreground/80 hover:bg-accent hover:text-foreground hover:translate-x-0.5",
+              )}
+            >
+              <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+              <span className="text-sm font-medium tracking-tight">Admin Panel</span>
+              <span className="ml-auto text-[10px] uppercase tracking-wider rounded-md bg-foreground/10 px-1.5 py-0.5">
+                Admin
+              </span>
+            </Link>
+          ) : (
+            <div
+              aria-disabled
+              title="Admin access only"
+              className="relative flex items-center gap-3 rounded-xl px-3.5 py-3 opacity-40 cursor-not-allowed select-none blur-[0.3px]"
+            >
+              <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+              <span className="text-sm font-medium tracking-tight">Admin Panel</span>
+              <span className="ml-auto text-[10px] uppercase tracking-wider rounded-md border border-border px-1.5 py-0.5">
+                Locked
+              </span>
+            </div>
+          )}
         </nav>
 
         {/* Footer: user card + logout */}
-        <div className="absolute bottom-0 inset-x-0 p-4 border-t border-white/10 bg-black/30">
+        <div className="absolute bottom-0 inset-x-0 p-4 border-t border-border bg-background/40">
           {user && (
             <div className="flex items-center gap-3 px-2 py-2 mb-2">
               {user.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
                   alt={user.name}
-                  className="h-9 w-9 rounded-full object-cover ring-1 ring-white/20"
+                  className="h-9 w-9 rounded-full object-cover ring-1 ring-border"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="h-9 w-9 rounded-full bg-white text-black flex items-center justify-center text-xs font-semibold">
+                <div className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold">
                   {initials}
                 </div>
               )}
               <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{user.name}</div>
-                <div className="text-[11px] text-white/50 truncate">{user.email}</div>
+                <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                  {user.name}
+                  <span className="text-[9px] uppercase tracking-wider rounded bg-foreground/10 px-1.5 py-0.5">
+                    {role}
+                  </span>
+                </div>
+                <div className="text-[11px] text-muted-foreground truncate">
+                  {user.isGuest ? "Guest session · not saved" : user.email}
+                </div>
               </div>
             </div>
           )}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 bg-white/[0.04] hover:bg-white/[0.10] transition text-sm"
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 bg-accent/60 hover:bg-accent transition text-sm"
           >
             <LogOut className="h-[18px] w-[18px]" /> Logout
           </button>

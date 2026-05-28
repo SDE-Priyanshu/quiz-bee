@@ -79,6 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("prepzo.auth.user");
       localStorage.removeItem("quizforge.auth.user");
       localStorage.removeItem(GUEST_KEY);
+      // Wipe any locally-stored progress so guest sessions never persist
+      localStorage.removeItem("prepzo.tests.history");
+      localStorage.removeItem("prepzo.test.progress");
+      sessionStorage.removeItem("prepzo.test.config");
+      sessionStorage.removeItem("prepzo.admin.session");
     } catch {}
     setGuest(null);
   }, []);

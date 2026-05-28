@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useGuestGate } from "@/components/GuestGate";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -39,6 +40,7 @@ function Dashboard() {
 
 function DashboardInner() {
   const router = useRouter();
+  const { ensureFullAccess } = useGuestGate();
   const [file, setFile] = React.useState<File | null>(null);
   const [exam, setExam] = React.useState("");
   const [count, setCount] = React.useState<number | "">("");
@@ -65,6 +67,7 @@ function DashboardInner() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    if (!ensureFullAccess("Uploading PDFs is a member feature.")) return;
     const f = files[0];
     if (!validate(f)) return;
     setFile(f);
@@ -84,6 +87,7 @@ function DashboardInner() {
   };
 
   const generate = async () => {
+    if (!ensureFullAccess("Generating mock tests is a member feature.")) return;
     setGenerating(true);
     await new Promise((r) => setTimeout(r, 1600));
     const config = {
