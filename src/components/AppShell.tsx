@@ -41,6 +41,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.navigate({ to: "/" });
   };
 
+  const initials = user
+    ? user.name.split(" ").map((p) => p[0]).join("").slice(0, 2)
+    : "";
+
   return (
     <div className="relative min-h-screen bg-background text-foreground">
       {/* Top navbar */}
