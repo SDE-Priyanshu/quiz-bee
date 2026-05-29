@@ -15,7 +15,8 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/Logo";
 import { getRole } from "@/lib/roles";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/NotificationBell";
+import { ProfileMenu } from "@/components/ProfileMenu";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -35,12 +36,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => { setOpen(false); }, [pathname]);
 
-  const initials = user ? user.name.split(" ").map((p) => p[0]).join("").slice(0, 2) : "";
-
   const handleLogout = async () => {
     await logout();
     router.navigate({ to: "/" });
   };
+
+  const initials = user
+    ? user.name.split(" ").map((p) => p[0]).join("").slice(0, 2)
+    : "";
 
   return (
     <div className="relative min-h-screen bg-background text-foreground">
@@ -69,25 +72,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {user && (
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <div className="flex items-center gap-2 rounded-full border border-border bg-card/80 px-2.5 py-1.5">
-              {user.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt={user.name}
-                  className="h-7 w-7 rounded-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="h-7 w-7 rounded-full bg-foreground text-background flex items-center justify-center text-[11px] font-semibold">
-                  {initials}
-                </div>
-              )}
-              <span className="text-xs text-muted-foreground hidden sm:inline pr-2 max-w-[180px] truncate">
-                {user.isGuest ? "Guest" : user.email}
-              </span>
-              </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <NotificationBell />
+              <ProfileMenu />
             </div>
           )}
         </div>
@@ -158,8 +145,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          {/* Admin entry — visible to all, interactive only for admin email */}
-          {isAdmin ? (
+          {/* Admin entry — only visible to admin accounts */}
+          {isAdmin && (
             <Link
               to="/admin"
               className={cn(
@@ -175,18 +162,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Admin
               </span>
             </Link>
-          ) : (
-            <div
-              aria-disabled
-              title="Admin access only"
-              className="relative flex items-center gap-3 rounded-xl px-3.5 py-3 opacity-40 cursor-not-allowed select-none blur-[0.3px]"
-            >
-              <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
-              <span className="text-sm font-medium tracking-tight">Admin Panel</span>
-              <span className="ml-auto text-[10px] uppercase tracking-wider rounded-md border border-border px-1.5 py-0.5">
-                Locked
-              </span>
-            </div>
           )}
         </nav>
 

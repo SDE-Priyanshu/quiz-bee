@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGuestGate } from "@/components/GuestGate";
+import { useNotifications } from "@/lib/notifications";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -41,6 +42,7 @@ function Dashboard() {
 function DashboardInner() {
   const router = useRouter();
   const { ensureFullAccess } = useGuestGate();
+  const { notify } = useNotifications();
   const [file, setFile] = React.useState<File | null>(null);
   const [exam, setExam] = React.useState("");
   const [count, setCount] = React.useState<number | "">("");
@@ -81,6 +83,11 @@ function DashboardInner() {
         clearInterval(iv);
         setUploading(false);
         toast.success("PDF uploaded successfully.");
+        notify({
+          type: "system",
+          title: "PDF uploaded",
+          body: `${f.name} is ready for mock test generation.`,
+        });
       }
       setProgress(p);
     }, 140);
@@ -99,6 +106,11 @@ function DashboardInner() {
     };
     sessionStorage.setItem("prepzo.test.config", JSON.stringify(config));
     setGenerating(false);
+    notify({
+      type: "test",
+      title: "Mock test generated",
+      body: `${config.count} ${difficulty} questions ready — ${exam.toUpperCase()}.`,
+    });
     router.navigate({ to: "/test" });
   };
 
