@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RequireAuth } from "@/components/AppShell";
 import { Github, Linkedin, Mail, MapPin, Code2, Sparkles, FileText, Wand2, BarChart3, ArrowRight } from "lucide-react";
-import priyanshuPhoto from "@/assets/priyanshu.jpg.asset.json";
+import priyanshuPhoto from "@/assets/priyanshu.png.asset.json";
 
 export const Route = createFileRoute("/about")({ component: About });
 
@@ -28,21 +28,21 @@ function About() {
         <div className="mt-8 rounded-2xl border border-border bg-card overflow-hidden">
           <div className="h-32 sm:h-40 bg-gradient-to-br from-foreground/10 via-foreground/5 to-transparent" />
           <div className="px-6 sm:px-10 pb-10 -mt-16 sm:-mt-20">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:gap-6">
-              <div className="group relative h-32 w-32 sm:h-36 sm:w-36 rounded-2xl overflow-hidden border-4 border-card shadow-xl ring-1 ring-border transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl">
+            <div className="flex flex-col items-center text-center sm:flex-row sm:items-end sm:text-left sm:gap-7">
+              <div className="group relative h-40 w-40 sm:h-44 sm:w-44 rounded-full overflow-hidden border border-border shadow-lg ring-1 ring-border/60 bg-card transition-all duration-300 hover:scale-[1.03] hover:shadow-xl">
                 <img
                   src={priyanshuPhoto.url}
                   alt="Priyanshu Patel"
-                  className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  className="h-full w-full object-cover object-center"
                   draggable={false}
                 />
               </div>
               <div className="mt-5 sm:mt-0 sm:pb-2">
                 <h2 className="text-2xl font-semibold tracking-tight">Priyanshu Patel</h2>
-                <div className="text-sm text-muted-foreground mt-1">
+                <div className="text-sm text-muted-foreground mt-1.5">
                   B.Tech CSE Student · Software Developer
                 </div>
-                <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="mt-2 flex items-center justify-center sm:justify-start gap-2 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" /> Varanasi, Uttar Pradesh, India
                 </div>
               </div>
