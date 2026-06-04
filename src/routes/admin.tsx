@@ -10,8 +10,6 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
 
-const SESSION_KEY = "prepzo.admin.session";
-
 function AdminPage() {
   return (
     <RequireAuth>
@@ -25,17 +23,15 @@ function AdminInner() {
   const router = useRouter();
   const allowed = isAdminEmail(user?.email);
 
-  const [unlocked, setUnlocked] = React.useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem(SESSION_KEY) === "1";
-  });
+  // Do not persist unlock state in sessionStorage/localStorage — that flag
+  // is writable by any same-origin JS (including XSS) and would let an
+  // attacker bypass the password. Keep unlock state in-memory only.
+  const [unlocked, setUnlocked] = React.useState<boolean>(false);
   const [password, setPassword] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
   React.useEffect(() => {
     if (!allowed) {
-      // Strip any prior session if the email no longer matches.
-      sessionStorage.removeItem(SESSION_KEY);
       setUnlocked(false);
     }
   }, [allowed]);
@@ -67,7 +63,6 @@ function AdminInner() {
     try {
       const res = await verifyAdminPassword({ data: { password } });
       if (res.ok) {
-        sessionStorage.setItem(SESSION_KEY, "1");
         setUnlocked(true);
         setPassword("");
         toast.success("Admin access granted");
@@ -138,7 +133,6 @@ function AdminInner() {
         </div>
         <button
           onClick={() => {
-            sessionStorage.removeItem(SESSION_KEY);
             setUnlocked(false);
           }}
           className="h-10 px-4 rounded-xl border border-border text-xs inline-flex items-center gap-2 hover:bg-accent"
