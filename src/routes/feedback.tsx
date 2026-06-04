@@ -33,7 +33,7 @@ function Feedback() {
           Your honest feedback shapes the roadmap. Give us a star rating and tell us what to build next.
         </p>
 
-        <div className="mt-8 rounded-2xl border border-border bg-card p-7 sm:p-10">
+        <div className="mt-8 rounded-2xl border border-border bg-card p-7 sm:p-10 lg:max-w-3xl">
           <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Your rating</div>
           <div className="mt-4 flex items-center gap-2">
             {[1, 2, 3, 4, 5].map((n) => {

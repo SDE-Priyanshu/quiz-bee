@@ -38,7 +38,7 @@ function Community() {
         <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight">Public threads</h1>
         <p className="mt-2 text-sm text-muted-foreground">Share tips, ask questions, vibe with other PrepZo users.</p>
 
-        <div className="mt-8 rounded-2xl border border-border bg-card">
+        <div className="mt-8 rounded-2xl border border-border bg-card lg:max-w-3xl">
           <ul className="divide-y divide-border">
             {msgs.map((m) => (
               <li key={m.id} className="flex gap-4 p-5">
