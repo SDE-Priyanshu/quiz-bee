@@ -68,6 +68,8 @@ function AdminInner() {
         toast.success("Admin access granted");
       } else if (res.reason === "not_configured") {
         toast.error("Admin password is not configured on the server.");
+      } else if (res.reason === "rate_limited") {
+        toast.error("Too many attempts. Please try again later.");
       } else {
         toast.error("Incorrect password");
       }
