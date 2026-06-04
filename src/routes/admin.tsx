@@ -147,7 +147,7 @@ function AdminInner() {
         </button>
       </header>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <AdminCard title="Users" value="—" hint="Coming soon" />
         <AdminCard title="Tests Generated" value="—" hint="Coming soon" />
         <AdminCard title="Active Sessions" value="—" hint="Coming soon" />

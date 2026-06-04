@@ -73,7 +73,7 @@ function Inner() {
       )}
 
       {items && items.length > 0 && (
-        <div className="grid gap-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {items.map((t) => {
             const acc = Math.round((t.correct / t.total) * 100);
             return (

@@ -129,6 +129,8 @@ function DashboardInner() {
         </p>
       </header>
 
+      <div className="lg:grid lg:grid-cols-[1.5fr_1fr] lg:gap-6 lg:items-start">
+        <div>
       {/* Upload */}
       <section
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -211,14 +213,15 @@ function DashboardInner() {
           pages for optimal quiz generation.
         </span>
       </div>
+        </div>
 
       {/* Configuration */}
-      <section className="mt-8 rounded-3xl border border-border bg-card p-6 sm:p-7">
+      <section className="mt-8 lg:mt-0 rounded-3xl border border-border bg-card p-6 sm:p-7">
         <div className="flex items-center gap-2 mb-5">
           <Sparkles className="h-4 w-4" />
           <h2 className="text-base font-semibold tracking-tight">Test Configuration</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-1 gap-4">
           <SelectField
             label="Exam Type"
             value={exam}
@@ -275,6 +278,7 @@ function DashboardInner() {
           </button>
         </div>
       </section>
+      </div>
     </div>
   );
 }

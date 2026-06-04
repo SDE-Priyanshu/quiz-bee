@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-screen bg-background text-foreground">
       {/* Top navbar */}
       <header className="fixed top-0 inset-x-0 z-30 h-16 border-b border-border glass">
-        <div className="h-full max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6">
+        <div className="h-full max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-10">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setOpen(true)}
@@ -203,7 +203,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="pt-24 pb-16 px-5 sm:px-8 max-w-6xl mx-auto animate-fade-up" key={pathname}>
+      <main
+        className="pt-24 pb-16 px-5 sm:px-8 lg:px-10 max-w-6xl xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto animate-fade-up"
+        key={pathname}
+      >
         {children}
       </main>
     </div>
