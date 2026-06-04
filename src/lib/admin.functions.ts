@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+const ADMIN_EMAIL = "priyanshuvns2008@gmail.com";
 
 export const verifyAdminPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: { password: string }) => {
     if (!data || typeof data.password !== "string") {
       throw new Error("Invalid input");
@@ -8,7 +12,13 @@ export const verifyAdminPassword = createServerFn({ method: "POST" })
     if (data.password.length > 200) throw new Error("Invalid input");
     return data;
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const callerEmail =
+      (context.claims as { email?: string } | undefined)?.email?.toLowerCase() ?? "";
+    const adminEmail = (process.env.ADMIN_EMAIL ?? ADMIN_EMAIL).toLowerCase();
+    if (!callerEmail || callerEmail !== adminEmail) {
+      return { ok: false as const, reason: "forbidden" as const };
+    }
     const expected = process.env.ADMIN_PASSWORD;
     if (!expected) {
       return { ok: false as const, reason: "not_configured" as const };
