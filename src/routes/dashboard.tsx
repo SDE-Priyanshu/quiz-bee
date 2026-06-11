@@ -14,6 +14,14 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGuestGate } from "@/components/GuestGate";
 import { useNotifications } from "@/lib/notifications";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  createPdfUploadRecord,
+  failPdfUpload,
+  finalizePdfUpload,
+} from "@/lib/pdfs.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { PDF_MAX_BYTES, isValidPdfFile } from "@/lib/pdf-config";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -29,7 +37,7 @@ const DIFFICULTIES = [
   { id: "hard", label: "Hard" },
 ];
 
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = PDF_MAX_BYTES;
 
 function Dashboard() {
   return (
@@ -43,7 +51,11 @@ function DashboardInner() {
   const router = useRouter();
   const { ensureFullAccess } = useGuestGate();
   const { notify } = useNotifications();
+  const createRecord = useServerFn(createPdfUploadRecord);
+  const finalize = useServerFn(finalizePdfUpload);
+  const markFailed = useServerFn(failPdfUpload);
   const [file, setFile] = React.useState<File | null>(null);
+  const [pdfId, setPdfId] = React.useState<string | null>(null);
   const [exam, setExam] = React.useState("");
   const [count, setCount] = React.useState<number | "">("");
   const [difficulty, setDifficulty] = React.useState("");
@@ -51,53 +63,122 @@ function DashboardInner() {
   const [generating, setGenerating] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [uploading, setUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const xhrRef = React.useRef<XMLHttpRequest | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const ready = !!file && !!exam && !!count && !!difficulty;
+  const ready = !!file && !!pdfId && !uploading && !!exam && !!count && !!difficulty;
 
-  const validate = (f: File) => {
-    if (f.type !== "application/pdf") {
-      toast.error("Only PDF files are allowed.");
-      return false;
+  const resetFile = () => {
+    if (xhrRef.current) {
+      try { xhrRef.current.abort(); } catch {}
+      xhrRef.current = null;
     }
-    if (f.size > MAX_BYTES) {
-      toast.error("File exceeds 10MB limit.");
-      return false;
-    }
-    return true;
+    setFile(null);
+    setPdfId(null);
+    setProgress(0);
+    setUploading(false);
+    setUploadError(null);
   };
+
+  async function uploadFile(f: File) {
+    setFile(f);
+    setUploading(true);
+    setProgress(0);
+    setUploadError(null);
+    setPdfId(null);
+
+    let createdId: string | null = null;
+    try {
+      const record = await createRecord({
+        data: { title: f.name, size_bytes: f.size },
+      });
+      createdId = record.pdfId;
+
+      // Per-user signed upload URL — RLS scopes to {auth.uid()}/ prefix.
+      const { data: signed, error: signErr } = await supabase.storage
+        .from(record.bucket)
+        .createSignedUploadUrl(record.storage_path);
+      if (signErr || !signed) throw new Error(signErr?.message ?? "Could not start upload");
+
+      // XHR PUT so we get real progress events. fetch() in browsers does
+      // not expose upload progress on a request body.
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhrRef.current = xhr;
+        xhr.open("PUT", signed.signedUrl, true);
+        xhr.setRequestHeader("Content-Type", "application/pdf");
+        xhr.setRequestHeader("x-upsert", "false");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setProgress(Math.min(99, (e.loaded / e.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          xhrRef.current = null;
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload failed (${xhr.status})`));
+        };
+        xhr.onerror = () => {
+          xhrRef.current = null;
+          reject(new Error("Network error during upload"));
+        };
+        xhr.onabort = () => {
+          xhrRef.current = null;
+          reject(new Error("Upload cancelled"));
+        };
+        xhr.send(f);
+      });
+
+      const row = await finalize({ data: { pdfId: createdId } });
+      setPdfId(row.id);
+      setProgress(100);
+      setUploading(false);
+      toast.success("PDF uploaded successfully.");
+      notify({
+        type: "system",
+        title: "PDF uploaded",
+        body: `${f.name} is ready for mock test generation.`,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      setUploading(false);
+      setUploadError(message);
+      toast.error(message);
+      if (createdId) {
+        try {
+          await markFailed({ data: { pdfId: createdId, reason: message } });
+        } catch {}
+      }
+    }
+  }
 
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     if (!ensureFullAccess("Uploading PDFs is a member feature.")) return;
     const f = files[0];
-    if (!validate(f)) return;
-    setFile(f);
-    setUploading(true);
-    setProgress(0);
-    let p = 0;
-    const iv = setInterval(() => {
-      p += Math.random() * 18 + 6;
-      if (p >= 100) {
-        p = 100;
-        clearInterval(iv);
-        setUploading(false);
-        toast.success("PDF uploaded successfully.");
-        notify({
-          type: "system",
-          title: "PDF uploaded",
-          body: `${f.name} is ready for mock test generation.`,
-        });
-      }
-      setProgress(p);
-    }, 140);
+    const check = isValidPdfFile(f);
+    if (!check.ok) {
+      toast.error(check.reason);
+      return;
+    }
+    void uploadFile(f);
+  };
+
+  const retryUpload = () => {
+    if (file) void uploadFile(file);
   };
 
   const generate = async () => {
     if (!ensureFullAccess("Generating mock tests is a member feature.")) return;
+    if (!pdfId) {
+      toast.error("Please wait for the PDF upload to finish.");
+      return;
+    }
     setGenerating(true);
     await new Promise((r) => setTimeout(r, 1600));
     const config = {
+      pdfId,
       fileName: file!.name,
       exam,
       count: Number(count),
@@ -181,7 +262,7 @@ function DashboardInner() {
               </div>
               {!uploading && (
                 <button
-                  onClick={() => { setFile(null); setProgress(0); }}
+                  onClick={resetFile}
                   className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent"
                   aria-label="Remove"
                 >
@@ -199,8 +280,23 @@ function DashboardInner() {
               />
             </div>
             <div className="mt-1.5 text-[10px] text-muted-foreground text-right">
-              {uploading ? `Uploading… ${Math.round(progress)}%` : "Ready"}
+              {uploading
+                ? `Uploading… ${Math.round(progress)}%`
+                : uploadError
+                ? "Upload failed"
+                : "Ready"}
             </div>
+            {uploadError && !uploading && (
+              <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-destructive">
+                <span className="truncate">{uploadError}</span>
+                <button
+                  onClick={retryUpload}
+                  className="shrink-0 rounded-md border border-destructive/40 px-2 py-1 text-[11px] hover:bg-destructive/10"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>
