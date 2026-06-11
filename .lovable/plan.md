@@ -1,187 +1,93 @@
+# Phase 2 — Cloud PDF Storage (Plan)
 
-# PrepZo Production Implementation Plan
-
-Built on the audit. No code changes in this plan — implementation only after you approve.
-
----
-
-## 1. Database Architecture (Lovable Cloud / Postgres)
-
-All tables in `public.*`, RLS enabled, GRANTs explicit, `auth.uid()` ownership, `created_at`/`updated_at` triggers.
-
-```text
-auth.users (managed)
-   │
-   ├── profiles (1:1)                full_name, avatar_url, exam_pref, onboarded_at
-   ├── user_roles (1:N)              role enum: admin | moderator | user
-   │
-   ├── pdf_uploads (1:N)             storage_path, filename, size_bytes, page_count,
-   │     │                           extraction_status, extracted_text, char_count
-   │     │
-   │     └── tests (1:N)             exam, difficulty, question_count, source_pdf_id,
-   │           │                     ai_model, generation_status, title
-   │           │
-   │           ├── test_questions (1:N)  stem, options jsonb, correct_index,
-   │           │                          explanation, topic
-   │           │
-   │           └── test_attempts (1:N)   started_at, submitted_at, score,
-   │                 │                   correct_count, total, time_taken_s,
-   │                 │                   answers jsonb (qid → selected_index)
-   │
-   ├── community_messages (1:N)      body, parent_id (nullable, for replies)
-   │     └── community_likes (M:N)   message_id + user_id (unique)
-   │
-   ├── feedback (1:N)                category, subject, body, status, admin_note
-   └── notifications (1:N)           type, title, body, read_at
-```
-
-Key rules:
-- `profiles` auto-created via `handle_new_user()` trigger on `auth.users` insert.
-- `user_roles` checked via `has_role(uid, role)` security-definer function — never read from client.
-- Replace hardcoded admin email in `src/lib/roles.ts` with a `user_roles` row seeded once.
-- `tests` and `test_questions` written by server-only code (admin client) after AI generation; clients read via `requireSupabaseAuth` scoped to `owner_id = auth.uid()`.
+Backend-only work. Existing dashboard UI (drag/drop card, progress bar, file chip, config panel, Generate button) stays pixel-identical — we only swap the fake `setInterval` for a real Supabase Storage upload and persist a row in `pdf_uploads`.
 
 ---
 
-## 2. Required Supabase Tables (summary)
+## 1. What will be changed
 
-| Table | Owner column | RLS shape |
-|---|---|---|
-| profiles | id = auth.uid() | self read/update; admin read all |
-| user_roles | user_id | self read; admin read/write |
-| pdf_uploads | user_id | self CRUD |
-| tests | user_id | self CRUD; admin read all |
-| test_questions | via tests.user_id | self read; service writes |
-| test_attempts | user_id | self CRUD; admin read all |
-| community_messages | user_id | authenticated read all; self insert/update/delete |
-| community_likes | user_id | authenticated read all; self insert/delete |
-| feedback | user_id | self read own; admin read all; auth insert |
-| notifications | user_id | self read/update |
+### Storage (Lovable Cloud)
+- Use the existing private `pdfs` bucket (already created in Stage 1).
+- Add RLS policies on `storage.objects` so a user can only read/write objects under their own folder prefix `{auth.uid()}/...`.
+- Set bucket config: `file_size_limit = 10485760` (10 MB), `allowed_mime_types = ['application/pdf']` — enforced server-side by Supabase even if a client bypasses the UI.
 
-All public tables get `GRANT SELECT, INSERT, UPDATE, DELETE ... TO authenticated; GRANT ALL ... TO service_role;` in the same migration. No `anon` grants — everything is auth-gated.
+### Database
+- `pdf_uploads` already exists from Stage 1. Confirm/extend columns:
+  `id, user_id, storage_path, filename, size_bytes, mime_type, page_count, extraction_status, extracted_text, char_count, upload_status, created_at, updated_at`.
+- Add `upload_status` enum (`uploading | ready | failed`) if missing, default `uploading`.
+- RLS: self-CRUD via `auth.uid() = user_id`; admin read-all via `has_role`.
+- Index on `(user_id, created_at desc)` for "my uploads" list later.
 
-Realtime publication: `community_messages`, `community_likes`, `notifications`.
+### Server functions (`src/lib/pdfs.functions.ts`)
+- `createPdfUploadRecord({ filename, size_bytes })` — auth-gated. Returns `{ pdfId, storage_path }` where path = `{userId}/{pdfId}.pdf`. Inserts row with `upload_status='uploading'`.
+- `finalizePdfUpload({ pdfId })` — verifies the object exists in storage under the user's prefix, flips `upload_status='ready'`, returns the row.
+- `failPdfUpload({ pdfId, reason })` — marks `failed`, used by client on error.
+- `listMyPdfs()` / `getPdf({ pdfId })` — for future PDF list / preview screens.
+- `deletePdf({ pdfId })` — removes storage object + row (future-ready).
+- All use `requireSupabaseAuth`; nothing public.
 
----
+### Client (`src/routes/dashboard.tsx`)
+- Replace the fake `setInterval` progress simulation with:
+  1. Client-side validation: MIME `application/pdf`, extension `.pdf`, size ≤ 10 MB.
+  2. Call `createPdfUploadRecord` → get `{ pdfId, storage_path }`.
+  3. `supabase.storage.from('pdfs').uploadToSignedUrl(...)` using a server-issued signed upload URL so we get real XHR progress events. (Falls back to `.upload()` if signed-URL path fails.)
+  4. Track real `progress` via XHR `onUploadProgress`; same progress bar UI.
+  5. On success → `finalizePdfUpload({ pdfId })`, stash `pdfId` in state (replaces the current "file in memory" approach), keep the existing `notify()` toast.
+  6. On error → `failPdfUpload`, show `toast.error` with the existing error styles, surface a Retry action on the file chip.
+- `pdfId` is what later stages (extraction, AI generation) consume — no UI added now, just the id flowing through.
 
-## 3. Required Storage Buckets
-
-| Bucket | Public | Purpose | Policies |
-|---|---|---|---|
-| `pdfs` | private | source study material | user can read/write only objects under `{auth.uid()}/...` |
-| `avatars` | public | profile pictures | self write under `{auth.uid()}/...`; world read |
-
-Path convention: `pdfs/{user_id}/{pdf_id}.pdf` — RLS on `storage.objects` uses `(storage.foldername(name))[1] = auth.uid()::text`.
-
----
-
-## 4. AI Integration Architecture
-
-Use Lovable AI Gateway (`LOVABLE_API_KEY` already present). No user key required.
-
-- **Model:** `google/gemini-2.5-flash` for MCQ generation (cost/latency balance), upgradable to `gemini-2.5-pro` for "hard" difficulty.
-- **Boundary:** all calls live in `createServerFn` under `src/lib/ai.functions.ts`. Never called from the browser.
-- **Prompt shape:** system prompt enforces exam (JEE/NEET/CBSE), difficulty, count, and a strict JSON schema. Use Gemini structured output / response schema, validated with Zod (`{ questions: [{ stem, options: [4], correct_index: 0..3, explanation, topic }] }`).
-- **Failure handling:** retry once with stricter "JSON only" reminder; on second failure return typed `{ error: "generation_failed" }` to the client.
-- **Persistence:** on success, server fn writes `tests` + `test_questions` rows transactionally using `supabaseAdmin`, returns `testId`. The test player loads questions by `testId`, not from session storage.
-- **Rate limit:** per-user, in-DB counter table or simple in-process map keyed by `userId` (e.g. 20 generations / 24h for free tier).
+### Config
+- No `.env` changes needed (Storage uses existing Supabase keys).
+- `MAX_BYTES` constant moves to a shared `src/lib/pdf-config.ts` so server + client agree.
 
 ---
 
-## 5. PDF Processing Architecture
+## 2. Why it is needed
 
-Goal: turn the uploaded PDF into clean text the AI can ground questions in.
-
-- **Upload:** browser uploads directly to `pdfs/{uid}/{uuid}.pdf` via `supabase.storage` (signed). A `pdf_uploads` row is inserted with `extraction_status='pending'`.
-- **Extraction:** server fn `extractPdfText({ pdfId })` runs in the Worker:
-  - Library: **`unpdf`** (pure JS, Worker-compatible). `pdfjs-dist` and `pdf-parse` are Node-only and will break under Cloudflare workerd.
-  - Downloads object via `supabaseAdmin.storage.from('pdfs').download(...)`, runs `extractText`, writes `extracted_text` + `char_count` + `page_count`, sets `extraction_status='ready'`.
-  - Hard limits: 10 MB, 50 pages, ~120k chars (truncate + warn).
-- **Generation handoff:** `generateTest({ pdfId, exam, count, difficulty })` requires `extraction_status='ready'`, chunks text if >30k tokens, then calls AI gateway.
-- **No client-side PDF parsing.** Dashboard removes the fake `setInterval` upload simulation.
+- **Permanence**: today the file lives only in browser memory and a fake progress bar — refresh wipes it. Cloud storage + DB row makes uploads survive logout, refresh, and redeploys.
+- **Security**: per-folder RLS on `storage.objects` is the only way to keep one user from listing/downloading another user's PDFs even if they guess the path.
+- **Validation defense in depth**: client checks UX, bucket `allowed_mime_types` + `file_size_limit` enforce the same rules server-side, RLS enforces ownership.
+- **Real progress**: signed-URL upload exposes true byte progress and a real failure surface — the current `setInterval` lies to users on slow networks.
+- **Foundation for Stages 5–7**: extraction, AI generation, and "My Tests" all key off `pdf_uploads.id`. Without a persisted row, none of them can work.
 
 ---
 
-## 6. Community Architecture
+## 3. Files that will be modified
 
-- **Source of truth:** `community_messages` table, not in-memory `SEED`.
-- **Server fns:** `listMessages({ cursor })` (keyset paginated, newest first), `postMessage({ body, parent_id? })`, `deleteOwnMessage({ id })`, `toggleLike({ messageId })`.
-- **Realtime:** browser subscribes to `postgres_changes` on `community_messages` + `community_likes`; new posts and like counts arrive without refresh.
-- **Validation:** Zod — body 1–2000 chars, strip HTML, basic profanity filter (later).
-- **Moderation:** `moderator` / `admin` role can delete any message via `has_role`.
+**New**
+- `src/lib/pdfs.functions.ts` — server fns above.
+- `src/lib/pdf-config.ts` — shared constants (`MAX_BYTES`, allowed MIME, max pages).
+- `supabase/migrations/<timestamp>_pdf_storage_hardening.sql` — storage.objects policies, bucket limits, `upload_status` enum/column + index if not present.
 
----
+**Modified**
+- `src/routes/dashboard.tsx` — swap fake upload for real one; keep markup, classes, animations, and copy intact. Only the handlers change.
 
-## 7. Admin Analytics Architecture
-
-Replace the four "Coming soon" cards with live data.
-
-- **Server fn:** `getAdminStats()` with `.middleware([requireSupabaseAuth])` + server-side `has_role(userId, 'admin')` check. Returns:
-  - `users_total`, `users_new_7d`
-  - `tests_generated_total`, `tests_generated_7d`
-  - `attempts_total`, `avg_score`
-  - `pdfs_uploaded_total`, `storage_bytes_used`
-  - `community_messages_7d`, `feedback_open_count`
-- **Implementation:** single SQL function `public.admin_stats()` (SECURITY DEFINER, role-gated inside the function) returning a JSON row — one round trip.
-- **Tables list:** paginated `getAdminUsers({ cursor, search })`, `getAdminFeedback({ status })`.
-- **Keep:** existing password-gate as a second factor on top of role check.
+**Not modified**
+- Every other route, component, style file, theme token, layout, and the `pdfs` bucket name itself.
+- `src/integrations/supabase/*` auto-generated files.
 
 ---
 
-## 8. Exact Implementation Order
+## 4. Possible risks
 
-Each step is independently shippable and unblocks the next.
-
-1. **Schema migration #1 — identity**
-   `profiles`, `user_roles`, `app_role` enum, `has_role()`, `handle_new_user()` trigger, GRANTs, RLS. Seed your account as `admin`. Replace `src/lib/roles.ts` hardcoded email with a `has_role` server fn.
-
-2. **Schema migration #2 — content**
-   `pdf_uploads`, `tests`, `test_questions`, `test_attempts`, `feedback`, `notifications`. GRANTs, RLS, `updated_at` triggers.
-
-3. **Storage buckets**
-   Create `pdfs` (private) + `avatars` (public). Add `storage.objects` policies scoped to `auth.uid()` folder prefix.
-
-4. **PDF upload (real)**
-   Replace fake `setInterval` in `dashboard.tsx` with `supabase.storage` upload + `pdf_uploads` insert. Show real progress.
-
-5. **PDF extraction server fn**
-   Add `unpdf`, build `extractPdfText` server fn, call it right after upload completes. Persist text.
-
-6. **AI MCQ server fn**
-   `generateTest` server fn → Lovable AI Gateway → Zod-validated JSON → write `tests` + `test_questions`. Returns `testId`.
-
-7. **Test player rewrite**
-   `src/routes/test.tsx` fetches by `testId` via server fn instead of generating fake "Statement A/B/C/D". Submission writes a `test_attempts` row.
-
-8. **My Tests rewrite**
-   `src/routes/tests.tsx` reads `test_attempts` via server fn instead of `localStorage`. Remove the localStorage key.
-
-9. **Community rewrite**
-   Replace `SEED` with `listMessages` + `postMessage` server fns + Realtime subscription.
-
-10. **Feedback persistence**
-    `src/routes/feedback.tsx` inserts into `feedback` table instead of discarding.
-
-11. **Admin analytics**
-    `admin_stats()` SQL fn + `getAdminStats` server fn + role gate. Wire the four cards + users/feedback tables.
-
-12. **Notifications persistence (optional polish)**
-    Move `useNotifications` from in-memory to `notifications` table with Realtime.
-
-13. **Hardening pass**
-    Per-user generation rate limit, file-size/page-count enforcement server-side, error boundaries on every route loader, run `supabase--linter` and fix warnings.
-
-14. **Publish + smoke test**
-    Generate a real test end-to-end as a non-admin user; verify admin dashboard reflects it.
+| Risk | Mitigation |
+|---|---|
+| Migration runs before code referencing new columns ships → temporary type mismatch. | Migration is additive (new enum + column with default). Existing rows get `upload_status='ready'` backfill in the same migration. |
+| `storage.objects` policy typo → user can't upload or can see others' files. | Policies scoped to `(storage.foldername(name))[1] = auth.uid()::text` for SELECT/INSERT/UPDATE/DELETE. Verified via a quick post-deploy curl as two users. |
+| Bucket `allowed_mime_types` blocks a legitimately-PDF file with wrong reported MIME (rare iOS Safari case). | Client also checks extension; we set MIME to `application/pdf` explicitly on upload so Supabase trusts it. |
+| Signed upload URL approach not supported by some older browsers. | Fallback to direct `supabase.storage.upload()` with `onUploadProgress` via the JS SDK's `XMLHttpRequest` path. |
+| 10 MB cap rejects a real user file. | Limit is in one shared constant; trivial to raise. Error message tells the user the cap. |
+| Orphan storage objects if `finalizePdfUpload` never runs (tab closed mid-upload). | Row stays `upload_status='uploading'`; future cleanup job (or `deletePdf`) can prune rows older than 1h with no object. Out of scope for this phase but designed for. |
+| RLS regression on `pdf_uploads` from earlier migration. | Re-assert policies in the new migration with `DROP POLICY IF EXISTS ... CREATE POLICY ...` to be idempotent. |
+| Rollback: code expects new column, migration reverted. | Migration is forward-only but additive; rollback = drop the column + enum. Code degrades to "upload always shows ready" — no data loss. |
 
 ---
 
-## Out of scope (call out, don't build now)
+## Implementation order (after approval)
 
-- Payments / pro tier
-- Email digests (Resend)
-- Mobile push notifications
-- Multi-language MCQs
-- Image-based questions (diagram OCR)
+1. Migration: `upload_status` enum/column + index + `storage.objects` policies + bucket limits.
+2. `src/lib/pdf-config.ts` + `src/lib/pdfs.functions.ts`.
+3. Rewrite handlers in `src/routes/dashboard.tsx` (markup untouched).
+4. Smoke test: upload as user A, confirm row + object; sign in as user B, confirm cannot list/download A's path; oversized file rejected; wrong MIME rejected.
 
-Reply with which step (or range) you want me to start with and I'll begin.
+Reply **approve** to proceed, or tell me what to change.
