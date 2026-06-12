@@ -22,6 +22,7 @@ import {
 } from "@/lib/pdfs.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { PDF_MAX_BYTES, isValidPdfFile } from "@/lib/pdf-config";
+import { createTestRecord, type GeneratedQuestion } from "@/lib/tests.functions";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -54,6 +55,7 @@ function DashboardInner() {
   const createRecord = useServerFn(createPdfUploadRecord);
   const finalize = useServerFn(finalizePdfUpload);
   const markFailed = useServerFn(failPdfUpload);
+  const createTest = useServerFn(createTestRecord);
   const [file, setFile] = React.useState<File | null>(null);
   const [pdfId, setPdfId] = React.useState<string | null>(null);
   const [exam, setExam] = React.useState("");
@@ -176,23 +178,44 @@ function DashboardInner() {
       return;
     }
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 1600));
-    const config = {
-      pdfId,
-      fileName: file!.name,
-      exam,
-      count: Number(count),
-      difficulty,
-      startedAt: Date.now(),
-    };
-    sessionStorage.setItem("prepzo.test.config", JSON.stringify(config));
-    setGenerating(false);
-    notify({
-      type: "test",
-      title: "Mock test generated",
-      body: `${config.count} ${difficulty} questions ready — ${exam.toUpperCase()}.`,
-    });
-    router.navigate({ to: "/test" });
+    try {
+      await new Promise((r) => setTimeout(r, 1200));
+      const questionCount = Number(count);
+      const questions = buildPlaceholderQuestions(exam, difficulty, questionCount);
+      const { testId } = await createTest({
+        data: {
+          pdfUploadId: pdfId,
+          title: file!.name,
+          examType: exam,
+          difficulty: difficulty as "easy" | "medium" | "hard",
+          questionCount,
+          durationMin: questionCount,
+          questions,
+        },
+      });
+      const config = {
+        testId,
+        pdfId,
+        fileName: file!.name,
+        exam,
+        count: questionCount,
+        difficulty,
+        startedAt: Date.now(),
+        questions,
+      };
+      sessionStorage.setItem("prepzo.test.config", JSON.stringify(config));
+      notify({
+        type: "test",
+        title: "Mock test generated",
+        body: `${questionCount} ${difficulty} questions ready — ${exam.toUpperCase()}.`,
+      });
+      router.navigate({ to: "/test" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not generate test";
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
