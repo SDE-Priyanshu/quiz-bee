@@ -126,7 +126,7 @@ export const listMyPdfs = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("pdf_uploads")
-      .select("id, title, size_bytes, status, page_count, created_at")
+      .select("id, title, original_filename, size_bytes, status, page_count, created_at, updated_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(100);
