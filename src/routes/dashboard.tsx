@@ -40,6 +40,33 @@ const DIFFICULTIES = [
 
 const MAX_BYTES = PDF_MAX_BYTES;
 
+const QUESTION_STEMS = [
+  "Which of the following statements best describes the concept?",
+  "Identify the correct relationship between the variables.",
+  "What is the most accurate definition of the term?",
+  "Which option correctly applies the principle?",
+  "Select the statement that is logically consistent.",
+  "Which case satisfies all of the conditions?",
+  "What is the expected outcome of the process?",
+  "Pick the option that does NOT belong to the set.",
+  "Which derivation correctly leads to the result?",
+  "Choose the option that aligns with the standard model.",
+];
+
+const EXAM_LABEL: Record<string, string> = { jee: "JEE", neet: "NEET", cbse: "CBSE" };
+
+function buildPlaceholderQuestions(
+  exam: string,
+  difficulty: string,
+  count: number,
+): GeneratedQuestion[] {
+  return Array.from({ length: count }).map((_, i) => ({
+    q: `Q${i + 1}. ${QUESTION_STEMS[i % QUESTION_STEMS.length]} (${EXAM_LABEL[exam] ?? exam} · ${difficulty})`,
+    options: ["Statement A", "Statement B", "Statement C", "Statement D"],
+    correct: (i * 3 + 1) % 4,
+  }));
+}
+
 function Dashboard() {
   return (
     <RequireAuth>
