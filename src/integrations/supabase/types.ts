@@ -145,6 +145,7 @@ export type Database = {
           error_message: string | null
           extracted_chars: number | null
           id: string
+          original_filename: string | null
           page_count: number | null
           size_bytes: number | null
           status: Database["public"]["Enums"]["pdf_status"]
@@ -158,6 +159,7 @@ export type Database = {
           error_message?: string | null
           extracted_chars?: number | null
           id?: string
+          original_filename?: string | null
           page_count?: number | null
           size_bytes?: number | null
           status?: Database["public"]["Enums"]["pdf_status"]
@@ -171,6 +173,7 @@ export type Database = {
           error_message?: string | null
           extracted_chars?: number | null
           id?: string
+          original_filename?: string | null
           page_count?: number | null
           size_bytes?: number | null
           status?: Database["public"]["Enums"]["pdf_status"]
