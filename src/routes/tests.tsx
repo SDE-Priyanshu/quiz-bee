@@ -2,19 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import * as React from "react";
 import { RequireAuth } from "@/components/AppShell";
 import { FileText, ArrowRight, ClipboardList } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { listMyTestAttempts, type TestHistoryItem } from "@/lib/tests.functions";
 
 export const Route = createFileRoute("/tests")({ component: Tests });
 
-type Attempt = {
-  id: number;
-  fileName: string;
-  exam: string;
-  difficulty: string;
-  total: number;
-  correct: number;
-  attempted: number;
-  finishedAt: number;
-};
+type Attempt = TestHistoryItem;
 
 const EXAM_LABEL: Record<string, string> = { jee: "JEE", neet: "NEET", cbse: "CBSE" };
 
@@ -28,15 +21,21 @@ function Tests() {
 
 function Inner() {
   const [items, setItems] = React.useState<Attempt[] | null>(null);
+  const fetchAttempts = useServerFn(listMyTestAttempts);
 
   React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem("prepzo.tests.history");
-      setItems(raw ? JSON.parse(raw) : []);
-    } catch {
-      setItems([]);
-    }
-  }, []);
+    let cancelled = false;
+    fetchAttempts()
+      .then((data) => {
+        if (!cancelled) setItems(data);
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAttempts]);
 
   return (
     <div>

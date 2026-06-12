@@ -22,6 +22,7 @@ import {
 } from "@/lib/pdfs.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { PDF_MAX_BYTES, isValidPdfFile } from "@/lib/pdf-config";
+import { createTestRecord, type GeneratedQuestion } from "@/lib/tests.functions";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -39,6 +40,33 @@ const DIFFICULTIES = [
 
 const MAX_BYTES = PDF_MAX_BYTES;
 
+const QUESTION_STEMS = [
+  "Which of the following statements best describes the concept?",
+  "Identify the correct relationship between the variables.",
+  "What is the most accurate definition of the term?",
+  "Which option correctly applies the principle?",
+  "Select the statement that is logically consistent.",
+  "Which case satisfies all of the conditions?",
+  "What is the expected outcome of the process?",
+  "Pick the option that does NOT belong to the set.",
+  "Which derivation correctly leads to the result?",
+  "Choose the option that aligns with the standard model.",
+];
+
+const EXAM_LABEL: Record<string, string> = { jee: "JEE", neet: "NEET", cbse: "CBSE" };
+
+function buildPlaceholderQuestions(
+  exam: string,
+  difficulty: string,
+  count: number,
+): GeneratedQuestion[] {
+  return Array.from({ length: count }).map((_, i) => ({
+    q: `Q${i + 1}. ${QUESTION_STEMS[i % QUESTION_STEMS.length]} (${EXAM_LABEL[exam] ?? exam} · ${difficulty})`,
+    options: ["Statement A", "Statement B", "Statement C", "Statement D"],
+    correct: (i * 3 + 1) % 4,
+  }));
+}
+
 function Dashboard() {
   return (
     <RequireAuth>
@@ -54,6 +82,7 @@ function DashboardInner() {
   const createRecord = useServerFn(createPdfUploadRecord);
   const finalize = useServerFn(finalizePdfUpload);
   const markFailed = useServerFn(failPdfUpload);
+  const createTest = useServerFn(createTestRecord);
   const [file, setFile] = React.useState<File | null>(null);
   const [pdfId, setPdfId] = React.useState<string | null>(null);
   const [exam, setExam] = React.useState("");
@@ -176,23 +205,44 @@ function DashboardInner() {
       return;
     }
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 1600));
-    const config = {
-      pdfId,
-      fileName: file!.name,
-      exam,
-      count: Number(count),
-      difficulty,
-      startedAt: Date.now(),
-    };
-    sessionStorage.setItem("prepzo.test.config", JSON.stringify(config));
-    setGenerating(false);
-    notify({
-      type: "test",
-      title: "Mock test generated",
-      body: `${config.count} ${difficulty} questions ready — ${exam.toUpperCase()}.`,
-    });
-    router.navigate({ to: "/test" });
+    try {
+      await new Promise((r) => setTimeout(r, 1200));
+      const questionCount = Number(count);
+      const questions = buildPlaceholderQuestions(exam, difficulty, questionCount);
+      const { testId } = await createTest({
+        data: {
+          pdfUploadId: pdfId,
+          title: file!.name,
+          examType: exam,
+          difficulty: difficulty as "easy" | "medium" | "hard",
+          questionCount,
+          durationMin: questionCount,
+          questions,
+        },
+      });
+      const config = {
+        testId,
+        pdfId,
+        fileName: file!.name,
+        exam,
+        count: questionCount,
+        difficulty,
+        startedAt: Date.now(),
+        questions,
+      };
+      sessionStorage.setItem("prepzo.test.config", JSON.stringify(config));
+      notify({
+        type: "test",
+        title: "Mock test generated",
+        body: `${questionCount} ${difficulty} questions ready — ${exam.toUpperCase()}.`,
+      });
+      router.navigate({ to: "/test" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not generate test";
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (

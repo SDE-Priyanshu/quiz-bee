@@ -7,6 +7,8 @@ import {
   Clock, ChevronLeft, ChevronRight, Send, CheckCircle2, XCircle,
   Sparkles, RotateCcw, Trophy,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { submitTestAttempt } from "@/lib/tests.functions";
 
 export const Route = createFileRoute("/test")({ component: Test });
 
@@ -17,11 +19,13 @@ type Question = {
 };
 
 type Config = {
+  testId?: string;
   fileName: string;
   exam: string;
   count: number;
   difficulty: string;
   startedAt: number;
+  questions?: Question[];
 };
 
 const EXAM_LABEL: Record<string, string> = { jee: "JEE", neet: "NEET", cbse: "CBSE" };
@@ -56,6 +60,7 @@ function Test() {
 
 function TestInner() {
   const router = useRouter();
+  const submitAttempt = useServerFn(submitTestAttempt);
   const [cfg, setCfg] = React.useState<Config | null>(null);
   const [questions, setQuestions] = React.useState<Question[]>([]);
   const [answers, setAnswers] = React.useState<Record<number, number>>({});
@@ -72,7 +77,7 @@ function TestInner() {
     }
     const c: Config = JSON.parse(raw);
     setCfg(c);
-    setQuestions(generateQuestions(c));
+    setQuestions(c.questions && c.questions.length ? c.questions : generateQuestions(c));
     setSecondsLeft(c.count * 60);
     const saved = localStorage.getItem("prepzo.test.progress");
     if (saved) {
@@ -119,23 +124,21 @@ function TestInner() {
       (acc, q, i) => acc + (answers[i] === q.correct ? 1 : 0),
       0,
     );
-    const record = {
-      id: cfg.startedAt,
-      fileName: cfg.fileName,
-      exam: cfg.exam,
-      difficulty: cfg.difficulty,
-      total: questions.length,
-      correct,
-      attempted: Object.keys(answers).length,
-      finishedAt: Date.now(),
-    };
-    try {
-      const prev = JSON.parse(localStorage.getItem("prepzo.tests.history") ?? "[]");
-      localStorage.setItem(
-        "prepzo.tests.history",
-        JSON.stringify([record, ...prev].slice(0, 25)),
-      );
-    } catch {}
+    const timeTakenSec = Math.max(0, Math.round((Date.now() - cfg.startedAt) / 1000));
+    if (cfg.testId) {
+      submitAttempt({
+        data: {
+          testId: cfg.testId,
+          answers,
+          score: correct,
+          total: questions.length,
+          timeTakenSec,
+        },
+      }).catch((err) => {
+        const m = err instanceof Error ? err.message : "Could not save attempt";
+        toast.error(m);
+      });
+    }
     localStorage.removeItem("prepzo.test.progress");
     toast.success(auto ? "Time's up — test submitted." : "Test submitted successfully.");
   };
