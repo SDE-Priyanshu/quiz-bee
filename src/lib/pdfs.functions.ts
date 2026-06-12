@@ -33,6 +33,7 @@ export const createPdfUploadRecord = createServerFn({ method: "POST" })
       .insert({
         user_id: userId,
         title: data.title,
+        original_filename: data.title,
         // Placeholder; replaced with the real object key below so the row
         // is never persisted without a path (column is NOT NULL).
         storage_path: "pending",
